@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Benchmark de Compressão — .NET 11</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #ffffff;
+            color: #111827;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header { text-align: center; margin-bottom: 40px; }
+        h1 { font-size: 2.2rem; margin-bottom: 6px; }
+        .subtitle { font-size: 1rem; color: #6b7280; }
+        .env { font-size: 0.8rem; color: #9ca3af; margin-top: 8px; font-family: monospace; }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            max-width: 900px;
+            width: 100%;
+        }
+        .card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 28px;
+        }
+        h2 {
+            margin: 0 0 20px 0;
+            font-size: 0.95rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            background: #f3f4f6;
+            color: #7c3aed;
+            font-weight: 600;
+            font-size: 0.8rem;
+            border: 1px solid #e5e7eb;
+            margin-top: 14px;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Benchmark de Compressão — .NET 11</h1>
+        <p class="subtitle">Zstandard vs GZip vs Brotli — JSON Realista (1 MB a 100 MB)</p>
+        <p class="env">BenchmarkDotNet v0.14.0 · Windows 11 · .NET 11.0.0 (11.0.26.10518) · X64 RyuJIT AVX2</p>
+    </div>
+
+    <div class="container">
+
+        <div class="card">
+            <h2>Compressão — Nível Fastest</h2>
+            <canvas id="fastestChart"></canvas>
+            <div class="badge">Zstandard é até 37% mais rápido que GZip no modo Fastest</div>
+        </div>
+
+        <div class="card">
+            <h2>Compressão — Nível Optimal</h2>
+            <canvas id="optimalChart"></canvas>
+            <div class="badge">Zstandard é 2.3x — 3.2x mais rápido que GZip no modo Optimal</div>
+        </div>
+
+        <div class="card">
+            <h2>Descompressão (dados em Optimal)</h2>
+            <canvas id="decompressChart"></canvas>
+            <div class="badge">Zstandard supera GZip e Brotli na descompressão de 100 MB</div>
+        </div>
+
+        <div class="card">
+            <h2>Vazão de Compressão Optimal (MB/s) — Quanto maior, melhor</h2>
+            <canvas id="throughputChart"></canvas>
+            <div class="badge">Zstandard processa 231 MB/s — GZip não chega a 100 MB/s</div>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        Resultados gerados com BenchmarkDotNet · Dados: JSON de e-commerce (~pedidos, clientes, produtos, logs)
+    </div>
+
+    <script>
+        const sizes = ['1 MB', '5 MB', '10 MB', '100 MB'];
+
+        // ── Dados reais do benchmark ──
+        const fastest = {
+            gzip:   [2.529, 12.535, 26.099, 351.544],
+            brotli: [2.390, 11.877, 23.665, 331.448],
+            zstd:   [2.173,  9.019, 18.021, 220.522]
+        };
+
+        const optimal = {
+            gzip:   [13.543,  66.670, 129.912, 1027.602],
+            brotli: [11.496,  58.712, 146.368, 1588.383],
+            zstd:   [ 4.154,  21.344,  40.567,  432.102]
+        };
+
+        const decompress = {
+            gzip:   [ 1.178,  6.427, 12.302,  99.521],
+            brotli: [ 1.683,  9.432, 17.613, 128.832],
+            zstd:   [ 1.303,  6.386, 13.590,  76.768]
+        };
+
+        // ── Configuração global ──
+        Chart.defaults.color = '#6b7280';
+        Chart.defaults.borderColor = '#f3f4f6';
+        Chart.defaults.font.family = "'Outfit', sans-serif";
+
+        const COLORS = { gzip: '#2563eb', brotli: '#0891b2', zstd: '#7c3aed' };
+
+        function makeDatasets(data) {
+            return [
+                { label: 'GZip',       data: data.gzip,   borderColor: COLORS.gzip,   backgroundColor: COLORS.gzip,   pointBackgroundColor: COLORS.gzip },
+                { label: 'Brotli',     data: data.brotli, borderColor: COLORS.brotli, backgroundColor: COLORS.brotli, pointBackgroundColor: COLORS.brotli },
+                { label: 'Zstandard',  data: data.zstd,   borderColor: COLORS.zstd,   backgroundColor: COLORS.zstd,   pointBackgroundColor: COLORS.zstd, borderWidth: 3.5 }
+            ];
+        }
+
+        const commonOpts = {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 6, padding: 20 } }
+            },
+            elements: {
+                line:  { tension: 0.25, borderWidth: 2.5, fill: false },
+                point: { radius: 5, hoverRadius: 7 }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { drawTicks: false }, title: { display: true, text: 'Tempo (ms)' } },
+                x: { grid: { display: false }, title: { display: true, text: 'Tamanho do payload' } }
+            }
+        };
+
+        // ── Gráfico 1: Fastest ──
+        new Chart(document.getElementById('fastestChart'), {
+            type: 'line',
+            data: { labels: sizes, datasets: makeDatasets(fastest) },
+            options: commonOpts
+        });
+
+        // ── Gráfico 2: Optimal ──
+        new Chart(document.getElementById('optimalChart'), {
+            type: 'line',
+            data: { labels: sizes, datasets: makeDatasets(optimal) },
+            options: commonOpts
+        });
+
+        // ── Gráfico 3: Descompressão ──
+        new Chart(document.getElementById('decompressChart'), {
+            type: 'line',
+            data: { labels: sizes, datasets: makeDatasets(decompress) },
+            options: commonOpts
+        });
+
+        // ── Gráfico 4: Vazão (MB/s) = SizeMB / (tempo_ms / 1000) ──
+        const sizesNum = [1, 5, 10, 100];
+        function toThroughput(times) {
+            return times.map((t, i) => Math.round((sizesNum[i] / (t / 1000)) * 10) / 10);
+        }
+        const throughputOpts = {
+            ...commonOpts,
+            scales: {
+                ...commonOpts.scales,
+                y: { ...commonOpts.scales.y, title: { display: true, text: 'Vazão (MB/s)' } }
+            }
+        };
+        new Chart(document.getElementById('throughputChart'), {
+            type: 'line',
+            data: {
+                labels: sizes,
+                datasets: [
+                    { label: 'GZip',      data: toThroughput(optimal.gzip),   borderColor: COLORS.gzip,   backgroundColor: COLORS.gzip,   pointBackgroundColor: COLORS.gzip },
+                    { label: 'Brotli',    data: toThroughput(optimal.brotli), borderColor: COLORS.brotli, backgroundColor: COLORS.brotli, pointBackgroundColor: COLORS.brotli },
+                    { label: 'Zstandard', data: toThroughput(optimal.zstd),   borderColor: COLORS.zstd,   backgroundColor: COLORS.zstd,   pointBackgroundColor: COLORS.zstd, borderWidth: 3.5 }
+                ]
+            },
+            options: throughputOpts
+        });
+    </script>
+</body>
+</html>

@@ -2,8 +2,8 @@
   <Folder Name="/docs/" />
   <Folder Name="/results/" />
   <Folder Name="/src/">
-    <Project Path="DotNet.Benchmarks.Compression/DotNet.Benchmarks.Compression.csproj" />
-    <Project Path="DotNet.Benchmarks.Runtime/DotNet.Benchmarks.Runtime.csproj" />
-    <Project Path="DotNet.Benchmarks.Threading/DotNet.Benchmarks.Threading.csproj" />
+    <Project Path="src/DotNet.Benchmarks.Compression/DotNet.Benchmarks.Compression.csproj" />
+    <Project Path="src/DotNet.Benchmarks.Runtime/DotNet.Benchmarks.Runtime.csproj" />
+    <Project Path="src/DotNet.Benchmarks.Threading/DotNet.Benchmarks.Threading.csproj" />
   </Folder>
 </Solution>
