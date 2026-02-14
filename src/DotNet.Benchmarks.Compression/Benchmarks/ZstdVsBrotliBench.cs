@@ -7,13 +7,13 @@ using System.Text.Json;
 namespace DotNet.Benchmarks.Compression.Benchmarks;
 
 /// <summary>
-/// Benchmark definitivo e irrefutável: GZip vs Brotli vs Zstandard (.NET 11)
+/// Definitive Benchmark: GZip vs Brotli vs Zstandard (.NET 11)
 ///
-/// - Dados realistas: JSON de API (simula payloads reais de microsserviços)
-/// - Tamanhos grandes: 1 MB, 5 MB, 10 MB
-/// - Compressão E Descompressão
-/// - Níveis: Fastest e Optimal
-/// - Taxas de compressão reportadas
+/// - Realistic Data: API JSON (simulates real microservice payloads)
+/// - Large Sizes: 1 MB, 5 MB, 10 MB, 100 MB
+/// - Compression AND Decompression
+/// - Levels: Fastest and Optimal
+/// - Compression Ratios reported
 /// </summary>
 [MemoryDiagnoser]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
@@ -37,15 +37,15 @@ public class ZstdVsBrotliBench
         _data = GenerateRealisticJson(SizeMB * 1024 * 1024);
         _output = new MemoryStream(_data.Length);
 
-        // Pré-comprime para os testes de descompressão (Optimal)
+        // Pre-compress for decompression tests (Optimal)
         _gzipCompressed = CompressToArray(s => new GZipStream(s, CompressionLevel.Optimal, true));
         _brotliCompressed = CompressToArray(s => new BrotliStream(s, CompressionLevel.Optimal, true));
         _zstdCompressed = CompressToArray(s => new ZstandardStream(s, CompressionLevel.Optimal, true));
 
-        // Relatório de tamanhos comprimidos
+        // Compressed sizes report
         Console.WriteLine();
         Console.WriteLine($"  ╔══════════════════════════════════════════════════════════════╗");
-        Console.WriteLine($"  ║  Payload: {SizeMB} MB ({_data.Length:N0} bytes) — JSON realista            ║");
+        Console.WriteLine($"  ║  Payload: {SizeMB} MB ({_data.Length:N0} bytes) — Realistic JSON         ║");
         Console.WriteLine($"  ╠══════════════════════════════════════════════════════════════╣");
 
         foreach (var level in new[] { CompressionLevel.Fastest, CompressionLevel.Optimal })
@@ -61,7 +61,7 @@ public class ZstdVsBrotliBench
         }
 
         Console.WriteLine($"  ╠══════════════════════════════════════════════════════════════╣");
-        Console.WriteLine($"  ║  Descompressão usa buffers pré-comprimidos em Optimal       ║");
+        Console.WriteLine($"  ║  Decompression uses pre-compressed buffers in Optimal       ║");
         Console.WriteLine($"  ║    GZip:      {_gzipCompressed.Length,12:N0} bytes                         ║");
         Console.WriteLine($"  ║    Brotli:    {_brotliCompressed.Length,12:N0} bytes                         ║");
         Console.WriteLine($"  ║    Zstandard: {_zstdCompressed.Length,12:N0} bytes                         ║");
@@ -70,15 +70,16 @@ public class ZstdVsBrotliBench
     }
 
     /// <summary>
-    /// Gera JSON realista que simula payloads de API REST / microsserviços.
-    /// Inclui campos variados: strings, números, datas, arrays, objetos aninhados.
-    /// A entropia é natural — não é texto repetitivo nem aleatório puro.
+    /// Generates realistic JSON simulating REST API / microservice payloads.
+    /// Includes varied fields: strings, numbers, dates, arrays, nested objects.
+    /// Natural entropy — not repetitive text or pure random noise.
     /// </summary>
     private static byte[] GenerateRealisticJson(int targetBytes)
     {
-        var rng = new Random(42); // seed fixa para reprodutibilidade total
+        var rng = new Random(42); // fixed seed for reproducibility
         var records = new List<object>();
 
+        // Names and data kept localized to simulate regional e-commerce data (Brazil)
         string[] firstNames = ["João", "Maria", "Pedro", "Ana", "Carlos", "Fernanda", "Lucas", "Juliana",
             "Rafael", "Beatriz", "Gustavo", "Camila", "Thiago", "Larissa", "Diego", "Amanda"];
         string[] lastNames = ["Silva", "Santos", "Oliveira", "Souza", "Rodrigues", "Ferreira", "Almeida",
@@ -87,12 +88,12 @@ public class ZstdVsBrotliBench
             "Salvador", "Brasília", "Fortaleza", "Recife", "Manaus", "Goiânia", "Belém"];
         string[] states = ["SP", "RJ", "MG", "PR", "RS", "BA", "DF", "CE", "PE", "AM", "GO", "PA"];
         string[] products = ["Notebook Dell Inspiron 15", "iPhone 15 Pro Max 256GB", "Samsung Galaxy S24 Ultra",
-            "Monitor LG UltraWide 34\"", "Teclado Mecânico Redragon", "Mouse Logitech MX Master 3S",
-            "Headset HyperX Cloud III", "SSD NVMe Samsung 990 Pro 2TB", "Webcam Logitech C920",
-            "Cadeira Gamer ThunderX3", "Placa de Vídeo RTX 4070 Ti", "Processador Ryzen 7 7800X3D"];
+            "LG UltraWide Monitor 34\"", "Redragon Mechanical Keyboard", "Logitech MX Master 3S Mouse",
+            "HyperX Cloud III Headset", "Samsung 990 Pro 2TB NVMe SSD", "Logitech C920 Webcam",
+            "ThunderX3 Gamer Chair", "RTX 4070 Ti Graphics Card", "Ryzen 7 7800X3D Processor"];
         string[] statuses = ["pending", "processing", "shipped", "delivered", "cancelled", "refunded"];
         string[] methods = ["credit_card", "debit_card", "pix", "boleto", "wallet"];
-        string[] carriers = ["Correios SEDEX", "Correios PAC", "Jadlog", "Total Express", "Azul Cargo"];
+        string[] carriers = ["DHL Express", "FedEx", "UPS", "Local Courier", "Amazon Logistics"];
         string[] logLevels = ["INFO", "WARN", "ERROR", "DEBUG"];
         string[] endpoints = ["/api/v1/orders", "/api/v1/users", "/api/v1/products", "/api/v1/payments",
             "/api/v1/shipping", "/api/v1/inventory", "/api/v1/reports", "/api/v1/notifications"];
@@ -106,7 +107,7 @@ public class ZstdVsBrotliBench
         int id = 1;
         while (true)
         {
-            // Simula um registro de pedido de e-commerce com log entries
+            // Simulates an e-commerce order record with log entries
             var orderDate = new DateTime(2024, 1, 1).AddMinutes(rng.Next(525600));
             var itemCount = rng.Next(1, 6);
             var items = new List<object>();
@@ -147,13 +148,13 @@ public class ZstdVsBrotliBench
                 },
                 shipping = new
                 {
-                    address = $"Rua {lastNames[rng.Next(lastNames.Length)]}, {rng.Next(1, 9999)}",
+                    address = $"Street {lastNames[rng.Next(lastNames.Length)]}, {rng.Next(1, 9999)}",
                     complement = rng.Next(3) == 0 ? $"Apt {rng.Next(1, 200)}" : null,
                     city = cities[cityIdx],
                     state = states[cityIdx],
                     zip_code = $"{rng.Next(10000, 99999)}-{rng.Next(100, 999)}",
                     carrier = carriers[rng.Next(carriers.Length)],
-                    tracking_code = $"BR{rng.Next(100000000, 999999999)}",
+                    tracking_code = $"TRK{rng.Next(100000000, 999999999)}",
                     estimated_days = rng.Next(2, 15)
                 },
                 payment = new
@@ -184,7 +185,7 @@ public class ZstdVsBrotliBench
             records.Add(record);
             id++;
 
-            // Verifica tamanho periodicamente (a cada 50 records)
+            // Check size periodically (every 50 records)
             if (id % 50 == 0)
             {
                 var currentBytes = JsonSerializer.SerializeToUtf8Bytes(new { data = records, total_records = records.Count });
@@ -205,7 +206,7 @@ public class ZstdVsBrotliBench
     }
 
     // ═══════════════════════════════════════════════════
-    //  COMPRESSÃO — Fastest
+    //  COMPRESSION — Fastest
     // ═══════════════════════════════════════════════════
 
     [BenchmarkCategory("Compress-Fastest"), Benchmark(Baseline = true)]
@@ -233,7 +234,7 @@ public class ZstdVsBrotliBench
     }
 
     // ═══════════════════════════════════════════════════
-    //  COMPRESSÃO — Optimal
+    //  COMPRESSION — Optimal
     // ═══════════════════════════════════════════════════
 
     [BenchmarkCategory("Compress-Optimal"), Benchmark(Baseline = true)]
@@ -261,7 +262,7 @@ public class ZstdVsBrotliBench
     }
 
     // ═══════════════════════════════════════════════════
-    //  DESCOMPRESSÃO (dados pré-comprimidos em Optimal)
+    //  DECOMPRESSION (Pre-compressed Optimal data)
     // ═══════════════════════════════════════════════════
 
     [BenchmarkCategory("Decompress"), Benchmark(Baseline = true)]

@@ -1,16 +1,14 @@
 # DotNet.Benchmarks
 
-Benchmarks de alto desempenho para recursos do .NET usando [BenchmarkDotNet](https://benchmarkdotnet.org/).
+High-performance benchmarks for .NET features using [BenchmarkDotNet](https://benchmarkdotnet.org/).
 
-## Projetos
+## Projects
 
-| Projeto | Descrição | Target |
+| Project | Description | Target |
 |---|---|---|
-| **DotNet.Benchmarks.Compression** | GZip vs Brotli vs Zstandard (nativo .NET 11) | `net11.0` |
-| **DotNet.Benchmarks.Runtime** | Benchmarks de runtime | `net10.0` |
-| **DotNet.Benchmarks.Threading** | Benchmarks de threading | `net10.0` |
+| **DotNet.Benchmarks.Compression** | GZip vs Brotli vs Zstandard (native .NET 11) | `net11.0` |
 
-## Estrutura
+## Structure
 
 ```
 DotNet.Benchmarks/
@@ -20,23 +18,42 @@ DotNet.Benchmarks/
 │   │   │   └── ZstdVsBrotliBench.cs
 │   │   ├── Program.cs
 │   │   └── DotNet.Benchmarks.Compression.csproj
-│   ├── DotNet.Benchmarks.Runtime/
-│   └── DotNet.Benchmarks.Threading/
 ├── results/
+│   ├── BenchmarkDashboard.html (Visual Charts)
 │   └── CompressionResults.md
 ├── docs/
 ├── DotNet.Benchmarks.slnx
 └── README.md
 ```
 
-## Pré-requisitos
+## Benchmark Results: .NET 11 Compression
 
-- [.NET 11 Preview SDK](https://dotnet.microsoft.com/download/dotnet/11.0) (para o projeto de Compression)
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (para os demais projetos)
+**Environment**: `.NET 11.0 Preview` on `Linux (Ubuntu 24.04)`, AMD EPYC Processor.
 
-## Como rodar
+### Summary
+- **Zstandard (Zstd)** is significantly faster than GZip and Brotli in **Optimal** mode (up to 4x faster).
+- **Zstandard** also wins in **Decompression** speed across all sizes.
+- **Brotli** provides good compression but is much slower to compress in Optimal mode.
 
-> **Importante:** Benchmarks devem sempre rodar em modo **Release** para resultados confiáveis.
+### Highlights (100 MB Payload)
+
+| Algorithm | Mode | Time (ms) | Throughput |
+|---|---|---:|---:|
+| **Zstandard** | Optimal | **591 ms** | **~169 MB/s** |
+| GZip | Optimal | 1073 ms | ~93 MB/s |
+| Brotli | Optimal | 2549 ms | ~39 MB/s |
+
+*Lower time is better.*
+
+You can view the full interactive charts in [results/BenchmarkDashboard.html](results/BenchmarkDashboard.html).
+
+## Prerequisites
+
+- [.NET 11 Preview SDK](https://dotnet.microsoft.com/download/dotnet/11.0) (for Compression project)
+
+## How to Run
+
+> **Important:** Benchmarks must always be run in **Release** mode for reliable results.
 
 ### Compression Benchmark
 
@@ -44,14 +61,14 @@ DotNet.Benchmarks/
 dotnet run --project src/DotNet.Benchmarks.Compression -c Release
 ```
 
-Os resultados aparecerão no terminal com as colunas **Mean** (tempo médio), **Error**, **StdDev**, **Ratio** e **Allocated** (memória).
+The results will appear in the console with columns for **Mean** (average time), **Error**, **StdDev**, **Ratio**, and **Allocated** (memory).
 
-### Modo rápido (smoke test)
+### Quick Mode (Smoke Test)
 
 ```bash
 dotnet run --project src/DotNet.Benchmarks.Compression -c Release -- --job short
 ```
 
-## Licença
+## License
 
-Veja [LICENSE.txt](LICENSE.txt).
+See [LICENSE.txt](LICENSE.txt).

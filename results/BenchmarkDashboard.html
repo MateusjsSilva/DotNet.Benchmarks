@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Benchmark de Compressão — .NET 11</title>
+    <title>Benchmark de Compressão .NET 11</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -17,10 +18,29 @@
             flex-direction: column;
             align-items: center;
         }
-        .header { text-align: center; margin-bottom: 40px; }
-        h1 { font-size: 2.2rem; margin-bottom: 6px; }
-        .subtitle { font-size: 1rem; color: #6b7280; }
-        .env { font-size: 0.8rem; color: #9ca3af; margin-top: 8px; font-family: monospace; }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #6b7280;
+        }
+
+        .env {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: 8px;
+            font-family: monospace;
+        }
+
         .container {
             display: grid;
             grid-template-columns: 1fr;
@@ -28,12 +48,14 @@
             max-width: 900px;
             width: 100%;
         }
+
         .card {
             background: #ffffff;
             border: 1px solid #e5e7eb;
             border-radius: 12px;
             padding: 28px;
         }
+
         h2 {
             margin: 0 0 20px 0;
             font-size: 0.95rem;
@@ -42,6 +64,7 @@
             letter-spacing: 1.5px;
             font-weight: 700;
         }
+
         .badge {
             display: inline-block;
             padding: 4px 12px;
@@ -53,6 +76,7 @@
             border: 1px solid #e5e7eb;
             margin-top: 14px;
         }
+
         .footer {
             margin-top: 40px;
             text-align: center;
@@ -61,69 +85,72 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="header">
         <h1>Benchmark de Compressão — .NET 11</h1>
-        <p class="subtitle">Zstandard vs GZip vs Brotli — JSON Realista (1 MB a 100 MB)</p>
-        <p class="env">BenchmarkDotNet v0.14.0 · Windows 11 · .NET 11.0.0 (11.0.26.10518) · X64 RyuJIT AVX2</p>
+        <p class="subtitle">Zstandard vs GZip vs Brotli — Simulação de API Real (1 MB a 10 MB)</p>
+        <p class="env">BenchmarkDotNet v0.14.0 · Linux (Ubuntu 24.04) · .NET 11.0 Preview · AMD EPYC</p>
     </div>
 
     <div class="container">
 
         <div class="card">
-            <h2>Compressão — Nível Fastest</h2>
+            <h2>Compressão — Nível Fastest (Menor Latência)</h2>
             <canvas id="fastestChart"></canvas>
-            <div class="badge">Zstandard é até 37% mais rápido que GZip no modo Fastest</div>
+            <div class="badge">Zstandard é ligeiramente mais rápido e consome menos CPU</div>
         </div>
 
         <div class="card">
-            <h2>Compressão — Nível Optimal</h2>
+            <h2>Compressão — Nível Optimal (Melhor Taxa)</h2>
             <canvas id="optimalChart"></canvas>
-            <div class="badge">Zstandard é 2.3x — 3.2x mais rápido que GZip no modo Optimal</div>
+            <div class="badge">Zstandard é até 4.5x mais rápido que Brotli para 10 MB (51ms vs 233ms)</div>
         </div>
 
         <div class="card">
-            <h2>Descompressão (dados em Optimal)</h2>
+            <h2>Descompressão (Leitura)</h2>
             <canvas id="decompressChart"></canvas>
-            <div class="badge">Zstandard supera GZip e Brotli na descompressão de 100 MB</div>
+            <div class="badge">Todos são rápidos, mas Zstd lidera consistentemente</div>
         </div>
 
         <div class="card">
-            <h2>Vazão de Compressão Optimal (MB/s) — Quanto maior, melhor</h2>
+            <h2>Taxa de Transferência (Throughput) — MB/s (Maior é Melhor)</h2>
             <canvas id="throughputChart"></canvas>
-            <div class="badge">Zstandard processa 231 MB/s — GZip não chega a 100 MB/s</div>
+            <div class="badge">Zstandard processa ~200 MB por segundo, contra ~90 MB do GZip</div>
         </div>
 
     </div>
 
     <div class="footer">
-        Resultados gerados com BenchmarkDotNet · Dados: JSON de e-commerce (~pedidos, clientes, produtos, logs)
+        Resultados gerados via BenchmarkDotNet · Dados: JSON de E-commerce realista
     </div>
 
     <script>
-        const sizes = ['1 MB', '5 MB', '10 MB', '100 MB'];
+        // Removido o outlier de 100MB para focar em cenários de API comuns
+        const sizes = ['1 MB', '5 MB', '10 MB'];
+        const sizesNum = [1, 5, 10];
 
-        // ── Dados reais do benchmark ──
+        // ── Dados Reais (Tempo em ms) ──
         const fastest = {
-            gzip:   [2.529, 12.535, 26.099, 351.544],
-            brotli: [2.390, 11.877, 23.665, 331.448],
-            zstd:   [2.173,  9.019, 18.021, 220.522]
+            gzip: [3.04, 15.17, 31.53],
+            brotli: [3.41, 19.03, 36.80],
+            zstd: [2.58, 13.04, 26.11]
         };
 
         const optimal = {
-            gzip:   [13.543,  66.670, 129.912, 1027.602],
-            brotli: [11.496,  58.712, 146.368, 1588.383],
-            zstd:   [ 4.154,  21.344,  40.567,  432.102]
+            gzip: [11.01, 54.91, 125.90],
+            brotli: [12.98, 105.76, 233.42],
+            zstd: [3.75, 24.14, 51.76]
         };
 
         const decompress = {
-            gzip:   [ 1.178,  6.427, 12.302,  99.521],
-            brotli: [ 1.683,  9.432, 17.613, 128.832],
-            zstd:   [ 1.303,  6.386, 13.590,  76.768]
+            gzip: [1.35, 6.93, 13.70],
+            brotli: [1.62, 8.99, 20.61],
+            zstd: [0.95, 5.42, 12.70]
         };
 
-        // ── Configuração global ──
+        // ── Configuração Global ──
         Chart.defaults.color = '#6b7280';
         Chart.defaults.borderColor = '#f3f4f6';
         Chart.defaults.font.family = "'Outfit', sans-serif";
@@ -132,9 +159,9 @@
 
         function makeDatasets(data) {
             return [
-                { label: 'GZip',       data: data.gzip,   borderColor: COLORS.gzip,   backgroundColor: COLORS.gzip,   pointBackgroundColor: COLORS.gzip },
-                { label: 'Brotli',     data: data.brotli, borderColor: COLORS.brotli, backgroundColor: COLORS.brotli, pointBackgroundColor: COLORS.brotli },
-                { label: 'Zstandard',  data: data.zstd,   borderColor: COLORS.zstd,   backgroundColor: COLORS.zstd,   pointBackgroundColor: COLORS.zstd, borderWidth: 3.5 }
+                { label: '   GZip', data: data.gzip, borderColor: COLORS.gzip, backgroundColor: COLORS.gzip, pointBackgroundColor: COLORS.gzip },
+                { label: '   Brotli', data: data.brotli, borderColor: COLORS.brotli, backgroundColor: COLORS.brotli, pointBackgroundColor: COLORS.brotli },
+                { label: '   Zstandard', data: data.zstd, borderColor: COLORS.zstd, backgroundColor: COLORS.zstd, pointBackgroundColor: COLORS.zstd, borderWidth: 3.5 }
             ];
         }
 
@@ -144,12 +171,12 @@
                 legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 6, padding: 20 } }
             },
             elements: {
-                line:  { tension: 0.25, borderWidth: 2.5, fill: false },
+                line: { tension: 0.25, borderWidth: 2.5, fill: false },
                 point: { radius: 5, hoverRadius: 7 }
             },
             scales: {
-                y: { beginAtZero: true, grid: { drawTicks: false }, title: { display: true, text: 'Tempo (ms)' } },
-                x: { grid: { display: false }, title: { display: true, text: 'Tamanho do payload' } }
+                y: { beginAtZero: true, grid: { drawTicks: false }, title: { display: true, text: 'Tempo (ms) — Menor é Melhor' } },
+                x: { grid: { display: false }, title: { display: true, text: 'Tamanho do Payload' } }
             }
         };
 
@@ -174,8 +201,7 @@
             options: commonOpts
         });
 
-        // ── Gráfico 4: Vazão (MB/s) = SizeMB / (tempo_ms / 1000) ──
-        const sizesNum = [1, 5, 10, 100];
+        // ── Gráfico 4: Vazão (MB/s) ──
         function toThroughput(times) {
             return times.map((t, i) => Math.round((sizesNum[i] / (t / 1000)) * 10) / 10);
         }
@@ -183,7 +209,7 @@
             ...commonOpts,
             scales: {
                 ...commonOpts.scales,
-                y: { ...commonOpts.scales.y, title: { display: true, text: 'Vazão (MB/s)' } }
+                y: { ...commonOpts.scales.y, title: { display: true, text: 'Vazão (MB/s) — Maior é Melhor' } }
             }
         };
         new Chart(document.getElementById('throughputChart'), {
@@ -191,13 +217,14 @@
             data: {
                 labels: sizes,
                 datasets: [
-                    { label: 'GZip',      data: toThroughput(optimal.gzip),   borderColor: COLORS.gzip,   backgroundColor: COLORS.gzip,   pointBackgroundColor: COLORS.gzip },
-                    { label: 'Brotli',    data: toThroughput(optimal.brotli), borderColor: COLORS.brotli, backgroundColor: COLORS.brotli, pointBackgroundColor: COLORS.brotli },
-                    { label: 'Zstandard', data: toThroughput(optimal.zstd),   borderColor: COLORS.zstd,   backgroundColor: COLORS.zstd,   pointBackgroundColor: COLORS.zstd, borderWidth: 3.5 }
+                    { label: 'GZip', data: toThroughput(optimal.gzip), borderColor: COLORS.gzip, backgroundColor: COLORS.gzip, pointBackgroundColor: COLORS.gzip },
+                    { label: 'Brotli', data: toThroughput(optimal.brotli), borderColor: COLORS.brotli, backgroundColor: COLORS.brotli, pointBackgroundColor: COLORS.brotli },
+                    { label: 'Zstandard', data: toThroughput(optimal.zstd), borderColor: COLORS.zstd, backgroundColor: COLORS.zstd, pointBackgroundColor: COLORS.zstd, borderWidth: 3.5 }
                 ]
             },
             options: throughputOpts
         });
     </script>
 </body>
+
 </html>

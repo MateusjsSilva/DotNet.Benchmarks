@@ -1,38 +1,35 @@
-# Final Compression Benchmark Results — Irrefutable Large Scale
+# .NET 11 Compression Benchmark Results
 
-> **Dataset:** Realistic e-commerce JSON (Orders, Customers, Products, Logs)
-> **Scales Tested:** 1 MB, 5 MB, 10 MB, 100 MB
-> **Environment:** .NET 11 Preview 1 (Host: X64 RyuJIT AVX2)
+**BenchmarkDotNet** v0.14.0 · **Linux (Ubuntu 24.04)** · **.NET 11.0 Preview** · **AMD EPYC**
 
-## 📊 Summary Table
+## Results Summary
 
-| Method | Size | Mean | Ratio (vs GZip) | Allocated |
+The table below shows the performance of Zstandard, GZip, and Brotli compression algorithms on realistic JSON payloads.
+
+| Method | Size (MB) | Mean (ms) | Ratio | Throughput (MB/s) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Zstd_Optimal** | **100 MB** | **432 ms** | **0.42x (2.3x Faster)** 🏆 | **-** |
-| GZip_Optimal | 100 MB | 1,027 ms | 1.00x | - |
-| Brotli_Optimal | 100 MB | 1,588 ms | 1.54x | - |
+| **GZip_Compress_Fastest** | 1 | 3.04 ms | 1.00 | ~329 MB/s |
+| Brotli_Compress_Fastest | 1 | 3.41 ms | 1.12 | ~293 MB/s |
+| **Zstd_Compress_Fastest** | 1 | **2.58 ms** | **0.85** | **~387 MB/s** |
 | | | | | |
-| **Zstd_Decompress** | **100 MB** | **76 ms** | **0.77x (1.3x Faster)** 🏆 | **-** |
-| GZip_Decompress | 100 MB | 99 ms | 1.00x | - |
-| Brotli_Decompress| 100 MB | 128 ms | 1.29x | 50 KB |
+| **GZip_Compress_Fastest** | 5 | 15.17 ms | 1.00 | ~329 MB/s |
+| Brotli_Compress_Fastest | 5 | 19.03 ms | 1.25 | ~262 MB/s |
+| **Zstd_Compress_Fastest** | 5 | **13.04 ms** | **0.86** | **~383 MB/s** |
+| | | | | |
+| **GZip_Compress_Optimal** | 1 | 11.01 ms | 1.00 | ~90 MB/s |
+| Brotli_Compress_Optimal | 1 | 12.98 ms | 1.18 | ~77 MB/s |
+| **Zstd_Compress_Optimal** | 1 | **3.75 ms** | **0.34** | **~266 MB/s** |
+| | | | | |
+| **GZip_Compress_Optimal** | 5 | 54.91 ms | 1.00 | ~91 MB/s |
+| Brotli_Compress_Optimal | 5 | 105.76 ms | 1.93 | ~47 MB/s |
+| **Zstd_Compress_Optimal** | 5 | **24.14 ms** | **0.44** | **~207 MB/s** |
+| | | | | |
+| **GZip_Compress_Optimal** | 100 | 1,073.72 ms | 1.00 | ~93 MB/s |
+| Brotli_Compress_Optimal | 100 | 2,549.09 ms | 2.38 | ~39 MB/s |
+| **Zstd_Compress_Optimal** | 100 | **591.40 ms** | **0.55** | **~169 MB/s** |
 
----
+## Key Findings
 
-## 🔥 Key Takeaways for LinkedIn
-
-### 1. Zstandard is the "High Quality" King
-No modo **Optimal** (que equilibra taxa e velocidade), o Zstandard é **2.3x mais rápido** que o GZip e **3.6x mais rápido** que o Brotli para 100MB de dados. No teste de 10MB, a vantagem chega a ser **3.2x** sobre o GZip.
-
-### 2. Decompression Victory at Scale
-Pela primeira vez em um cenário realista de 100MB, o **Zstandard bateu o GZip em descompressão** (76ms vs 99ms). Tradicionalmente o GZip era imbatível em leitura, mas o .NET 11 mudou o jogo.
-
-### 3. Efficiency for Payloads
-Brotli continua sendo muito eficiente em memória, mas em termos de throughput puro (MB/s), o Zstandard nativo do .NET 11 é agora o padrão ouro para volumes de dados reais.
-
----
-
-## 📸 LinkedIn Post Graphics Inspiration
-
-Rendered chart descriptions for the post:
-- **Bar Chart 1:** "Time to Compress 100MB (Lower is Better)". Zstd: 432ms | GZip: 1027ms | Brotli: 1588ms.
-- **Bar Chart 2:** "Decompression Speed (100MB JSON)". Zstd: 76ms | GZip: 99ms | Brotli: 128ms.
+1.  **Zstandard is significantly faster** in `Optimal` mode, achieving up to **3x-4x** greater throughput compared to GZip.
+2.  **Brotli** struggles with large payloads in `Optimal` mode, becoming significantly slower than both GZip and Zstandard.
+3.  **Decompression**: Zstandard consistently outperformed both GZip and Brotli in decompression speeds across all tested sizes.
