@@ -28,7 +28,10 @@ DotNet.Benchmarks/
 
 ## Benchmark Results: .NET 11 Compression
 
-**Environment**: `.NET 11.0 Preview` on `Linux (Ubuntu 24.04)`, AMD EPYC Processor.
+**Environment**:
+- **OS**: Linux (Ubuntu 24.04)
+- **Framework**: .NET 11.0 Preview
+- **Hardware**: Cloud VPS (12 vCPUs, 48 GB RAM, SSD)
 
 ### Summary
 - **Zstandard (Zstd)** is significantly faster than GZip and Brotli in **Optimal** mode (up to 4x faster).
