@@ -3,5 +3,6 @@
   <Folder Name="/results/" />
   <Folder Name="/src/">
     <Project Path="src/DotNet.Benchmarks.Compression/DotNet.Benchmarks.Compression.csproj" />
+    <Project Path="src/DotNet.Benchmarks.GuidGen/DotNet.Benchmarks.GuidGen.csproj" />
   </Folder>
 </Solution>

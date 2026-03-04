@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark de GUID v7 — .NET 11</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #ffffff;
+            color: #111827;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #6b7280;
+        }
+
+        .env {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: 8px;
+            font-family: monospace;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            min-height: 450px;
+        }
+
+        h2 {
+            margin: 0 0 20px 0;
+            font-size: 0.95rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        canvas {
+            max-height: 300px !important;
+            height: 300px !important;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            background: #f3f4f6;
+            color: #7c3aed;
+            font-weight: 600;
+            font-size: 0.8rem;
+            border: 1px solid #e5e7eb;
+            margin-top: 14px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>Benchmark de GUID v7 — .NET 11</h1>
+        <p class="subtitle">GUID v7 (Time-Ordered) vs v4 (Random) — Simulação de Inserção em Banco de Dados (100K a 1M)</p>
+        <p class="env">BenchmarkDotNet v0.14.0 · Windows · .NET 11.0 Preview · SQLite B-Tree Proxy</p>
+    </div>
+
+    <div class="container">
+
+        <div class="card">
+            <h2>Tempo de Inserção — Multi-Scale (Menor é Melhor)</h2>
+            <canvas id="timeChart"></canvas>
+            <div class="badge">GUID v7 é 2.44x–6.10x mais rápido, vantagem cresce com escala</div>
+        </div>
+
+        <div class="card">
+            <h2>Speedup Factor — Comparação Direta</h2>
+            <canvas id="speedupChart"></canvas>
+            <div class="badge">De 100K para 1M: 2.44x → 6.10x (padrão consistente, não sorte)</div>
+        </div>
+
+        <div class="card">
+            <h2>Throughput (Rows/segundo) — Maior é Melhor</h2>
+            <canvas id="throughputChart"></canvas>
+            <div class="badge">GUID v7: ~270k–290k rows/sec | GUID v4: ~50k–110k rows/sec</div>
+        </div>
+
+        <div class="card">
+            <h2>Contagem de Páginas do Índice — Fragmentação</h2>
+            <canvas id="pageCountChart"></canvas>
+            <div class="badge">Similar fisicamente, mas v7 preenche sequencialmente (menos I/O)</div>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        Resultados gerados via BenchmarkDotNet · Metodologia: inserção isolada, conexão B-Tree, sem cache entre runs
+    </div>
+
+    
+    <script>
+        // ── Dados GUID Benchmark ──
+        const scales = ['100K', '500K', '1M'];
+
+        const guidData = {
+            v4Time: [895.9, 8715.4, 21061.3],
+            v7Time: [367.0, 1837.7, 3455.3],
+            speedup: [2.44, 4.74, 6.10],
+            v4Throughput: [111623, 57370, 47480],
+            v7Throughput: [272509, 272072, 289411],
+            v4Pages: [1599, 8053, 16139],
+            v7Pages: [1624, 8148, 16308]
+        };
+
+        // ── Configuração Global (igual ao Compression) ──
+        Chart.defaults.color = '#6b7280';
+        Chart.defaults.borderColor = '#f3f4f6';
+        Chart.defaults.font.family = "'Outfit', sans-serif";
+
+        const COLORS = { v4: '#2563eb', v7: '#7c3aed' };
+
+        const commonOpts = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 6, padding: 20 } }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { drawTicks: false } },
+                x: { grid: { display: false } }
+            }
+        };
+
+        // ── Gráfico 1: Tempo de Inserção ──
+        new Chart(document.getElementById('timeChart'), {
+            type: 'line',
+            data: {
+                labels: scales,
+                datasets: [
+                    { 
+                        label: '   GUID v4', 
+                        data: guidData.v4Time, 
+                        borderColor: COLORS.v4, 
+                        backgroundColor: COLORS.v4, 
+                        borderWidth: 2.5, 
+                        pointRadius: 5, 
+                        pointBackgroundColor: COLORS.v4,
+                        tension: 0.25,
+                        fill: false
+                    },
+                    { 
+                        label: '   GUID v7', 
+                        data: guidData.v7Time, 
+                        borderColor: COLORS.v7, 
+                        backgroundColor: COLORS.v7, 
+                        borderWidth: 3.5, 
+                        pointRadius: 5, 
+                        pointBackgroundColor: COLORS.v7,
+                        tension: 0.25,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                ...commonOpts,
+                scales: {
+                    ...commonOpts.scales,
+                    y: { ...commonOpts.scales.y, max: 25000, title: { display: true, text: 'Tempo (ms) — Menor é Melhor' } }
+                }
+            }
+        });
+
+        // ── Gráfico 2: Speedup Factor ──
+        new Chart(document.getElementById('speedupChart'), {
+            type: 'bar',
+            data: {
+                labels: scales,
+                datasets: [{
+                    label: '   Speedup (x vezes mais rápido)',
+                    data: guidData.speedup,
+                    backgroundColor: [COLORS.v7],
+                    borderColor: COLORS.v7,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                ...commonOpts,
+                scales: {
+                    ...commonOpts.scales,
+                    y: { ...commonOpts.scales.y, max: 7, title: { display: true, text: 'Múltiplo (2x = 100% mais rápido)' } }
+                }
+            }
+        });
+
+        // ── Gráfico 3: Throughput ──
+        new Chart(document.getElementById('throughputChart'), {
+            type: 'line',
+            data: {
+                labels: scales,
+                datasets: [
+                    {
+                        label: '   GUID v4',
+                        data: guidData.v4Throughput,
+                        borderColor: COLORS.v4,
+                        backgroundColor: COLORS.v4,
+                        borderWidth: 2.5,
+                        pointRadius: 5,
+                        pointBackgroundColor: COLORS.v4,
+                        tension: 0.25,
+                        fill: false
+                    },
+                    {
+                        label: '   GUID v7',
+                        data: guidData.v7Throughput,
+                        borderColor: COLORS.v7,
+                        backgroundColor: COLORS.v7,
+                        borderWidth: 3.5,
+                        pointRadius: 5,
+                        pointBackgroundColor: COLORS.v7,
+                        tension: 0.25,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                ...commonOpts,
+                scales: {
+                    ...commonOpts.scales,
+                    y: { 
+                        ...commonOpts.scales.y, 
+                        max: 350000,
+                        ticks: { callback: (v) => (v / 1000).toFixed(0) + 'k' },
+                        title: { display: true, text: 'Rows/sec — Maior é Melhor' } 
+                    }
+                }
+            }
+        });
+
+        // ── Gráfico 4: Page Count ──
+        new Chart(document.getElementById('pageCountChart'), {
+            type: 'bar',
+            data: {
+                labels: scales,
+                datasets: [
+                    {
+                        label: '   GUID v4 Pages',
+                        data: guidData.v4Pages,
+                        backgroundColor: COLORS.v4,
+                        borderColor: COLORS.v4,
+                        borderWidth: 2
+                    },
+                    {
+                        label: '   GUID v7 Pages',
+                        data: guidData.v7Pages,
+                        backgroundColor: COLORS.v7,
+                        borderColor: COLORS.v7,
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                ...commonOpts,
+                scales: {
+                    ...commonOpts.scales,
+                    y: { ...commonOpts.scales.y, max: 20000, title: { display: true, text: 'Número de Páginas (B-Tree)' } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
