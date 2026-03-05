@@ -78,7 +78,7 @@
             padding: 4px 12px;
             border-radius: 4px;
             background: #f3f4f6;
-            color: #7c3aed;
+            color: #000000;
             font-weight: 600;
             font-size: 0.8rem;
             border: 1px solid #e5e7eb;
@@ -90,6 +90,45 @@
             text-align: center;
             color: #9ca3af;
             font-size: 0.8rem;
+        }
+
+        .table-card {
+            width: 100%;
+            max-width: 900px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 28px;
+            margin-top: 30px;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        .result-table th,
+        .result-table td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 12px 10px;
+            text-align: left;
+        }
+
+        .result-table th {
+            background: #f9fafb;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .result-table td:nth-child(4),
+        .result-table td:nth-child(5) {
+            font-weight: 700;
+        }
+
+        .v7-cell {
+            color: #7de03f;
+            font-weight: 700;
         }
     </style>
 </head>
@@ -130,6 +169,44 @@
 
     </div>
 
+    <div class="table-card">
+        <h2>Tabela de Resultados</h2>
+        <table class="result-table">
+            <thead>
+                <tr>
+                    <th>Escala</th>
+                    <th>GUID v4 (ms)</th>
+                    <th>GUID v7 (ms)</th>
+                    <th>Speedup</th>
+                    <th>Ganho</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>100K</td>
+                    <td>895,9</td>
+                    <td class="v7-cell">367,0</td>
+                    <td>2.44x</td>
+                    <td>59,0%</td>
+                </tr>
+                <tr>
+                    <td>500K</td>
+                    <td>8.715,4</td>
+                    <td class="v7-cell">1.837,7</td>
+                    <td>4.74x</td>
+                    <td>78,9%</td>
+                </tr>
+                <tr>
+                    <td>1M</td>
+                    <td>21.061,3</td>
+                    <td class="v7-cell">3.455,3</td>
+                    <td>6.10x</td>
+                    <td>83,6%</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
     <div class="footer">
         Resultados gerados via BenchmarkDotNet · Metodologia: inserção isolada, conexão B-Tree, sem cache entre runs
     </div>
@@ -154,7 +231,7 @@
         Chart.defaults.borderColor = '#f3f4f6';
         Chart.defaults.font.family = "'Outfit', sans-serif";
 
-        const COLORS = { v4: '#2563eb', v7: '#7c3aed' };
+        const COLORS = { v4: '#000000', v7: '#7de03f' };
 
         const commonOpts = {
             responsive: true,

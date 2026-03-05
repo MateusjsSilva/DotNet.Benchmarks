@@ -26,12 +26,12 @@ DotNet.Benchmarks/
 │       └── DotNet.Benchmarks.GuidGen.csproj
 ├── results/
 │   ├── Compression/
-│   │   └── artifacts/
-│   ├── GuidGen/
 │   │   ├── artifacts/
-│   │   └── GuidScenarioReport.md
-│   ├── BenchmarkDashboard.html (legacy visual chart)
-│   └── CompressionResults.md (legacy summary)
+│   │   ├── BenchmarkDashboard.html
+│   │   └── CompressionResults.md
+│   └── GuidGen/
+│       ├── artifacts/
+│       └── GuidScenarioReport.md
 ├── docs/
 ├── DotNet.Benchmarks.slnx
 └── README.md
@@ -59,7 +59,7 @@ DotNet.Benchmarks/
 
 *Lower time is better.*
 
-You can view the full interactive charts in [results/BenchmarkDashboard.html](results/BenchmarkDashboard.html).
+You can view the full interactive charts in [results/BenchmarkDashboard.html](results/Compression/BenchmarkDashboard.html).
 
 ## Prerequisites
 
@@ -84,7 +84,7 @@ dotnet --version
 dotnet --list-sdks
 # Must show 11.0.100-preview.1.26104.118
 ```
-
+---
 ### Compression Benchmark
 
 **Full run** (statistical analysis with multiple payload sizes):
@@ -102,7 +102,7 @@ Artifacts path: `results/Compression/artifacts/`
 ```bash
 dotnet run --project src/DotNet.Benchmarks.Compression -c Release -- --job short
 ```
-
+---
 ### GUID Benchmark (v4 vs v7)
 
 #### Option A: Full BenchmarkDotNet run (comprehensive, slower)
