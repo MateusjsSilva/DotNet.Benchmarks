@@ -5,6 +5,18 @@ var repositoryRoot = FindRepositoryRoot();
 var resultsRoot = Path.Combine(repositoryRoot, "results", "GuidGen");
 Directory.CreateDirectory(resultsRoot);
 
+if (args.Contains("--scenarios-convergence", StringComparer.OrdinalIgnoreCase))
+{
+    var reportPath = Path.Combine(resultsRoot, "GuidConvergenceReport.md");
+    return GuidConvergenceRunner.RunAndSave(Console.Out, reportPath);
+}
+
+if (args.Contains("--scenarios-migration", StringComparer.OrdinalIgnoreCase))
+{
+    var reportPath = Path.Combine(resultsRoot, "GuidMigrationReport.md");
+    return GuidMigrationScenarioRunner.RunAndSave(Console.Out, reportPath);
+}
+
 if (args.Contains("--scenarios-multi", StringComparer.OrdinalIgnoreCase))
 {
     var reportPath = Path.Combine(resultsRoot, "GuidScenarioReport-Multi.md");
