@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Benchmark de GUID v7 — .NET 11</title>
+    <title>GUID v7 Benchmark — .NET 11</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -136,41 +136,41 @@
 <body>
 
     <div class="header">
-        <h1>Benchmark de GUID v7 — .NET 11</h1>
-        <p class="subtitle">GUID v7 (Time-Ordered) vs v4 (Random) — Simulação de Inserção em Banco de Dados (100K a 1M)</p>
+        <h1>GUID v7 Benchmark — .NET 11</h1>
+        <p class="subtitle">GUID v7 (Time-Ordered) vs v4 (Random) — Insert simulation in a database (100K to 1M)</p>
         <p class="env">BenchmarkDotNet v0.14.0 · Windows · .NET 11.0 Preview · SQLite B-Tree Proxy</p>
     </div>
 
     <div class="container">
 
         <div class="card">
-            <h2>Tempo de Inserção — Multi-Scale (Menor é Melhor)</h2>
+            <h2>Insert Time — Multi-Scale (Lower is Better)</h2>
             <canvas id="timeChart"></canvas>
-            <div class="badge">GUID v7 é 2.44x–6.10x mais rápido, vantagem cresce com escala</div>
+            <div class="badge">GUID v7 is 2.44x–6.10x faster; advantage increases with scale</div>
         </div>
 
         <div class="card">
-            <h2>Speedup Factor — Comparação Direta</h2>
+            <h2>Speedup Factor — Direct Comparison</h2>
             <canvas id="speedupChart"></canvas>
-            <div class="badge">De 100K para 1M: 2.44x → 6.10x (padrão consistente, não sorte)</div>
+            <div class="badge">From 100K to 1M: 2.44x → 6.10x (consistent pattern, not luck)</div>
         </div>
 
         <div class="card">
-            <h2>Throughput (Rows/segundo) — Maior é Melhor</h2>
+            <h2>Throughput (Rows/sec) — Higher is Better</h2>
             <canvas id="throughputChart"></canvas>
             <div class="badge">GUID v7: ~270k–290k rows/sec | GUID v4: ~50k–110k rows/sec</div>
         </div>
 
         <div class="card">
-            <h2>Contagem de Páginas do Índice — Fragmentação</h2>
+            <h2>Index Page Count — Fragmentation</h2>
             <canvas id="pageCountChart"></canvas>
-            <div class="badge">Similar fisicamente, mas v7 preenche sequencialmente (menos I/O)</div>
+            <div class="badge">Physically similar, but v7 fills sequentially (less I/O)</div>
         </div>
 
     </div>
 
     <div class="table-card">
-        <h2>Tabela de Resultados</h2>
+        <h2>Results Table</h2>
         <table class="result-table">
             <thead>
                 <tr>
@@ -208,7 +208,7 @@
     </div>
 
     <div class="footer">
-        Resultados gerados via BenchmarkDotNet · Metodologia: inserção isolada, conexão B-Tree, sem cache entre runs
+        Results generated via BenchmarkDotNet · Methodology: isolated inserts, B-Tree connection, no cache between runs
     </div>
 
     
@@ -279,7 +279,7 @@
                 ...commonOpts,
                 scales: {
                     ...commonOpts.scales,
-                    y: { ...commonOpts.scales.y, max: 25000, title: { display: true, text: 'Tempo (ms) — Menor é Melhor' } }
+                    y: { ...commonOpts.scales.y, max: 25000, title: { display: true, text: 'Time (ms) — Lower is Better' } }
                 }
             }
         });
@@ -290,7 +290,7 @@
             data: {
                 labels: scales,
                 datasets: [{
-                    label: '   Speedup (x vezes mais rápido)',
+                    label: '   Speedup (×)',
                     data: guidData.speedup,
                     backgroundColor: [COLORS.v7],
                     borderColor: COLORS.v7,
@@ -301,7 +301,7 @@
                 ...commonOpts,
                 scales: {
                     ...commonOpts.scales,
-                    y: { ...commonOpts.scales.y, max: 7, title: { display: true, text: 'Múltiplo (2x = 100% mais rápido)' } }
+                    y: { ...commonOpts.scales.y, max: 7, title: { display: true, text: 'Multiple (2× = 100% faster)' } }
                 }
             }
         });

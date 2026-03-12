@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmark de Migração GUID v4 → v7 — Parte 2</title>
+    <title>GUID v4 → v7 Migration Benchmark — Part 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+        <h1>GUID v4 → v7 Migration — Part 2</h1>
+        <p class="subtitle">Performance convergence: Hybrid vs Full Rebuild — legacy base of 100K fragmented v4 rows</p>
+        <p class="env">.NET 11.0 Preview · SQLite B-Tree Proxy · Single-run scenario · New rows over legacy v4 base</p>
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            <span>V4 Baseline — no migration</span>
+        }
+
+        .header {
+            <span>V7 Hybrid — switch to v7, inherited fragmentation</span>
+            margin-bottom: 40px;
+        }
+
+            <span>V7 + Vacuum — compact index before inserts</span>
+            font-size: 2.2rem;
+            margin-bottom: 6px;
+        }
+            <span>V7 Full Rebuild — full migration (ideal)</span>
+        .subtitle {
+            font-size: 1rem;
+            color: #6b7280;
+        <strong>Scenario:</strong> simulated legacy database with <strong>100,000 GUID v4 rows</strong> (B-Tree index fragmented by random inserts).
+        At each X-axis point we measure only the insertion time of the <em>new</em> rows for each strategy.
+        The <strong>Recovery Index</strong> shows how much of the maximum possible gain (Full Rebuild) has been recovered.
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: 8px;
+            font-family: monospace;
+            <h2>Insert Time — New Rows (Log Scale · Lower is Better)</h2>
+
+            <div class="badge">V7 Hybrid: 74–91% faster than V4, with no maintenance action</div>
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            <h2>Throughput (Rows/sec) — Higher is Better</h2>
+            flex-wrap: wrap;
+            <div class="badge">V7 Hybrid: ~175k–637k rows/sec vs ~31k–92k for fragmented V4</div>
+
+        .legend-item {
+            display: flex;
+            <h2>Recovery Index — % of Ideal Gain Recovered</h2>
+            gap: 8px;
+            <div class="badge">From 100K new rows, Hybrid converges to ~87–100% of ideal</div>
+            font-weight: 600;
+        }
+
+            <h2>Speedup vs V4 Baseline (×) — Higher is Better</h2>
+            width: 12px;
+            <div class="badge">V7 Hybrid: 3.9x–10.8x faster · V7 + Vacuum: 4.0x–8.1x · Full Rebuild: 2.5x–9.9x</div>
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        <h2>Consolidated Results Table</h2>
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+                    <th>New Rows</th>
+            width: 100%;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            min-height: 450px;
+        }
+
+        h2 {
+            margin: 0 0 20px 0;
+            font-size: 0.95rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        canvas {
+            max-height: 300px !important;
+            height: 300px !important;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            background: #f3f4f6;
+            color: #000000;
+            font-weight: 600;
+            font-size: 0.8rem;
+            border: 1px solid #e5e7eb;
+            margin-top: 14px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.8rem;
+        }
+
+        .table-card {
+            width: 100%;
+            max-width: 900px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 28px;
+            margin-top: 30px;
+            box-sizing: border-box;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .result-table th,
+        .result-table td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 9px 12px;
+            text-align: right;
+        }
+
+        .result-table th:first-child,
+        .result-table td:first-child { text-align: left; }
+
+        .result-table th {
+            background: #f9fafb;
+            font-weight: 700;
+            color: #111827;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .cell-v4     { color: #6b7280; font-weight: 600; }
+        .cell-hybrid { color: #5cb82c; font-weight: 700; }
+        .cell-vacuum { color: #0284c7; font-weight: 700; }
+        .cell-full   { color: #7c3aed; font-weight: 700; }
+        .cell-recovery { font-weight: 700; }
+
+        .scenario-note {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px 20px;
+            font-size: 0.875rem;
+            color: #374151;
+            max-width: 900px;
+            width: 100%;
+            margin-bottom: 30px;
+            box-sizing: border-box;
+        }
+
+        .scenario-note strong { color: #111827; }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>GUID v4 → v7 Migration — Part 2</h1>
+        <p class="subtitle">Performance Convergence: Hybrid vs Full Rebuild — 100K fragmented v4 base</p>
+        <p class="env">.NET 11.0 Preview · SQLite B-Tree Proxy · Single-run scenario · New rows over legacy v4 base</p>
+    </div>
+
+    <div class="legend-strip">
+        <div class="legend-item">
+            <div class="legend-dot" style="background:#6b7280;"></div>
+            <span>V4 Baseline — no migration</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:#7de03f;"></div>
+            <span>V7 Hybrid — switch to v7, inherited fragmentation</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:#38bdf8;"></div>
+            <span>V7 + Vacuum — compacts index before inserts</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:#a78bfa;"></div>
+            <span>V7 Full Rebuild — full migration (ideal)</span>
+        </div>
+    </div>
+
+    <div class="scenario-note">
+        <strong>Cenário:</strong> banco legado simulado com <strong>100.000 linhas de GUID v4</strong> (índice B-Tree fragmentado por inserções aleatórias).
+        Em cada ponto do eixo X, medimos apenas o tempo de inserção das <em>novas</em> linhas com cada estratégia.
+        O <strong>Recovery Index</strong> indica quanto do ganho máximo possível (Full Rebuild) já foi recuperado.
+    </div>
+
+    <div class="container">
+
+        <!-- Gráfico 1: Tempo de Inserção -->
+        <div class="card">
+            <h2>Insert Time — New Rows (Log Scale · Lower is Better)</h2>
+            <canvas id="timeChart"></canvas>
+            <div class="badge">V7 Hybrid: 74–91% faster than V4, without maintenance actions</div>
+        </div>
+
+        <!-- Gráfico 2: Throughput -->
+        <div class="card">
+            <h2>Throughput (rows/sec) — Higher is Better</h2>
+            <canvas id="throughputChart"></canvas>
+            <div class="badge">V7 Hybrid: ~175k–637k rows/sec vs ~31k–92k for fragmented V4 base</div>
+        </div>
+
+        <!-- Gráfico 3: Recovery Index -->
+        <div class="card">
+            <h2>Recovery Index — % of Ideal Gain Recovered</h2>
+            <canvas id="recoveryChart"></canvas>
+            <div class="badge">From 100K new rows, Hybrid converges to ~87–100% of the ideal</div>
+        </div>
+
+        <!-- Gráfico 4: Speedup vs V4 -->
+        <div class="card">
+            <h2>Speedup vs V4 Baseline (×) — Higher is Better</h2>
+            <canvas id="speedupChart"></canvas>
+            <div class="badge">V7 Hybrid: 3.9x–10.8x faster · V7 + Vacuum: 4.0x–8.1x · Full Rebuild: 2.5x–9.9x</div>
+        </div>
+
+    </div>
+
+        <!-- Results Table -->
+    <div class="table-card">
+        <h2>Consolidated Results Table</h2>
+        <table class="result-table">
+            <thead>
+                <tr>
+                    <th>New Rows</th>
+                    <th class="cell-v4">V4 (ms)</th>
+                    <th class="cell-hybrid">Hybrid (ms)</th>
+                    <th class="cell-vacuum">+ Vacuum (ms)</th>
+                    <th class="cell-full">Full Rebuild (ms)</th>
+                    <th>Hybrid Speedup</th>
+                    <th>Recovery Index</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>10K</strong></td>
+                    <td class="cell-v4">108,3</td>
+                    <td class="cell-hybrid">20,9</td>
+                    <td class="cell-vacuum">27,4</td>
+                    <td class="cell-full">43,0</td>
+                    <td><strong>5.2×</strong></td>
+                    <td class="cell-recovery">100%</td>
+                </tr>
+                <tr>
+                    <td><strong>25K</strong></td>
+                    <td class="cell-v4">803,4</td>
+                    <td class="cell-hybrid">142,8</td>
+                    <td class="cell-vacuum">127,7</td>
+                    <td class="cell-full">93,9</td>
+                    <td><strong>5.6×</strong></td>
+                    <td class="cell-recovery">61%</td>
+                </tr>
+                <tr>
+                    <td><strong>50K</strong></td>
+                    <td class="cell-v4">844,3</td>
+                    <td class="cell-hybrid">78,5</td>
+                    <td class="cell-vacuum">173,0</td>
+                    <td class="cell-full">130,9</td>
+                    <td><strong>10.8×</strong></td>
+                    <td class="cell-recovery">100%</td>
+                </tr>
+                <tr>
+                    <td><strong>100K</strong></td>
+                    <td class="cell-v4">1.803,9</td>
+                    <td class="cell-hybrid">466,8</td>
+                    <td class="cell-vacuum">378,7</td>
+                    <td class="cell-full">367,3</td>
+                    <td><strong>3.9×</strong></td>
+                    <td class="cell-recovery">73%</td>
+                </tr>
+                <tr>
+                    <td><strong>250K</strong></td>
+                    <td class="cell-v4">6.015,1</td>
+                    <td class="cell-hybrid">1.278,8</td>
+                    <td class="cell-vacuum">1.100,2</td>
+                    <td class="cell-full">1.277,2</td>
+                    <td><strong>4.7×</strong></td>
+                    <td class="cell-recovery">100%</td>
+                </tr>
+                <tr>
+                    <td><strong>500K</strong></td>
+                    <td class="cell-v4">13.691,7</td>
+                    <td class="cell-hybrid">1.561,7</td>
+                    <td class="cell-vacuum">1.695,4</td>
+                    <td class="cell-full">1.384,6</td>
+                    <td><strong>8.8×</strong></td>
+                    <td class="cell-recovery">87%</td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="font-size:0.78rem;color:#9ca3af;margin-top:14px;">
+            Recovery Index = (Hybrid_throughput − V4_throughput) / (Full_throughput − V4_throughput) · 100%<br>
+            Legacy base: 100.000 GUID v4 rows · VACUUM ≈ ALTER INDEX REBUILD (SQL Server) / VACUUM FULL + REINDEX (Postgres)
+        </p>
+    </div>
+
+    <div class="footer">
+        Results generated via GuidMigrationScenarioRunner · Methodology: isolated inserts, pre-populated legacy v4 base, timing only new rows
+    </div>
+
+    <script>
+        // ── Dados do Migration Benchmark ──
+        const scales = ['10K', '25K', '50K', '100K', '250K', '500K'];
+
+        const data = {
+            v4Time:      [108.3,   803.4,   844.3,  1803.9,  6015.1, 13691.7],
+            hybridTime:  [ 20.9,   142.8,    78.5,   466.8,  1278.8,  1561.7],
+            vacuumTime:  [ 27.4,   127.7,   173.0,   378.7,  1100.2,  1695.4],
+            fullTime:    [ 43.0,    93.9,   130.9,   367.3,  1277.2,  1384.6],
+
+            v4Throughput:      [ 92353,  31119,  59221,  55437,  41562,  36518],
+            hybridThroughput:  [477929, 175046, 636643, 214243, 195491, 320168],
+            vacuumThroughput:  [365462, 195833, 288959, 264036, 227231, 294912],
+            fullThroughput:    [232350, 266159, 381869, 272285, 195745, 361123],
+
+            hybridRecovery: [100.0, 61.2, 100.0,  73.2,  99.8, 87.4],
+            vacuumRecovery: [100.0, 70.1,  71.2,  96.2, 100.0, 79.6],
+
+            hybridSpeedup: [5.18, 5.63, 10.75, 3.86, 4.70, 8.77],
+            vacuumSpeedup: [3.95, 6.29,  4.88, 4.76, 5.47, 8.08],
+            fullSpeedup:   [2.52, 8.56,  6.45, 4.91, 4.71, 9.89]
+        };
+
+        // ── Configuração Global ──
+        Chart.defaults.color = '#6b7280';
+        Chart.defaults.borderColor = '#f3f4f6';
+        Chart.defaults.font.family = "'Outfit', sans-serif";
+
+        const C = {
+            v4:     '#6b7280',
+            hybrid: '#7de03f',
+            vacuum: '#38bdf8',
+            full:   '#a78bfa'
+        };
+
+        const commonOpts = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 6, padding: 20 } }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { drawTicks: false } },
+                x: { grid: { display: false } }
+            }
+        };
+
+        function ds(label, color, values, opts = {}) {
+            return {
+                label,
+                data: values,
+                borderColor: color,
+                backgroundColor: color,
+                borderWidth: 2.5,
+                pointRadius: 5,
+                pointBackgroundColor: color,
+                tension: 0.25,
+                fill: false,
+                ...opts
+            };
+        }
+
+        // ── Gráfico 1: Tempo de Inserção (log scale) ──
+        new Chart(document.getElementById('timeChart'), {
+            type: 'line',
+            data: {
+                labels: scales,
+                datasets: [
+                    ds('   V4 Baseline',     C.v4,     data.v4Time,     { borderWidth: 2, borderDash: [5,4] }),
+                    ds('   V7 Hybrid',       C.hybrid,  data.hybridTime,  { borderWidth: 3.5 }),
+                    ds('   V7 + Vacuum',     C.vacuum,  data.vacuumTime),
+                    ds('   V7 Full Rebuild', C.full,    data.fullTime,    { borderDash: [4,3] })
+                ]
+            },
+            options: {
+                ...commonOpts,
+                scales: {
+                    x: { grid: { display: false } },
+                    y: {
+                        type: 'logarithmic',
+                        grid: { drawTicks: false },
+                        title: { display: true, text: 'Tempo (ms) — Escala Log · Menor é Melhor' },
+                        ticks: {
+                            callback: (v) => {
+                                const map = { 10: '10', 100: '100', 1000: '1K', 10000: '10K' };
+                                return map[v] ?? '';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // ── Gráfico 2: Throughput ──
+        new Chart(document.getElementById('throughputChart'), {
+            type: 'line',
+            data: {
+                labels: scales,
+                datasets: [
+                    ds('   V4 Baseline',     C.v4,     data.v4Throughput,     { borderWidth: 2, borderDash: [5,4] }),
+                    ds('   V7 Hybrid',       C.hybrid,  data.hybridThroughput,  { borderWidth: 3.5 }),
+                    ds('   V7 + Vacuum',     C.vacuum,  data.vacuumThroughput),
+                    ds('   V7 Full Rebuild', C.full,    data.fullThroughput,    { borderDash: [4,3] })
+                ]
+            },
+            options: {
+                ...commonOpts,
+                scales: {
+                    x: { grid: { display: false } },
+                    y: {
+                        beginAtZero: true,
+                        grid: { drawTicks: false },
+                        title: { display: true, text: 'Rows/sec — Maior é Melhor' },
+                        ticks: { callback: (v) => (v / 1000).toFixed(0) + 'k' }
+                    }
+                }
+            }
+        });
+
+        // ── Gráfico 3: Recovery Index ──
+        new Chart(document.getElementById('recoveryChart'), {
+            type: 'bar',
+            data: {
+                labels: scales,
+                datasets: [
+                    {
+                        label: '   V7 Hybrid',
+                        data: data.hybridRecovery,
+                        backgroundColor: C.hybrid + 'cc',
+                        borderColor: C.hybrid,
+                        borderWidth: 2
+                    },
+                    {
+                        label: '   V7 + Vacuum',
+                        data: data.vacuumRecovery,
+                        backgroundColor: C.vacuum + 'cc',
+                        borderColor: C.vacuum,
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                ...commonOpts,
+                scales: {
+                    x: { grid: { display: false } },
+                    y: {
+                        beginAtZero: true,
+                        max: 110,
+                        grid: { drawTicks: false },
+                        title: { display: true, text: 'Recovery Index (%) — 100% = equivale ao Full Rebuild' },
+                        ticks: { callback: (v) => v + '%' }
+                    }
+                },
+                plugins: {
+                    ...commonOpts.plugins,
+                    annotation: {
+                        annotations: {
+                            line100: {
+                                type: 'line',
+                                yMin: 100,
+                                yMax: 100,
+                                borderColor: C.full,
+                                borderWidth: 2,
+                                borderDash: [6, 4],
+                                label: { content: 'Full Rebuild (100%)', enabled: true, position: 'end' }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // ── Gráfico 4: Speedup vs V4 ──
+        new Chart(document.getElementById('speedupChart'), {
+            type: 'bar',
+            data: {
+                labels: scales,
+                datasets: [
+                    {
+                        label: '   V7 Hybrid',
+                        data: data.hybridSpeedup,
+                        backgroundColor: C.hybrid + 'cc',
+                        borderColor: C.hybrid,
+                        borderWidth: 2
+                    },
+                    {
+                        label: '   V7 + Vacuum',
+                        data: data.vacuumSpeedup,
+                        backgroundColor: C.vacuum + 'cc',
+                        borderColor: C.vacuum,
+                        borderWidth: 2
+                    },
+                    {
+                        label: '   V7 Full Rebuild',
+                        data: data.fullSpeedup,
+                        backgroundColor: C.full + 'cc',
+                        borderColor: C.full,
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                ...commonOpts,
+                scales: {
+                    x: { grid: { display: false } },
+                    y: {
+                        beginAtZero: true,
+                        grid: { drawTicks: false },
+                        title: { display: true, text: 'Múltiplo vs V4 (2× = 100% mais rápido)' },
+                        ticks: { callback: (v) => v + '×' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
