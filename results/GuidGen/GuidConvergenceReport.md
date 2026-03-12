@@ -1,13 +1,13 @@
-# GUID v4 → v7: Ponto de Convergência
+# GUID v4 → v7: Convergence Point
 
-**Base legada:** 100.000 linhas GUID v4 (índice B-Tree fragmentado)
-**Metodologia:** 3 execuções por ponto → mediana (reduz variância single-run)
-**Threshold de convergência:** Recovery Index ≥ 90%
+**Legacy base:** 100,000 GUID v4 rows (fragmented B-Tree index)
+**Methodology:** 3 runs per point → median (reduces single-run variance)
+**Convergence threshold:** Recovery Index ≥ 90%
 
 > Recovery Index = (Hybrid_throughput − V4_throughput) / (Full_throughput − V4_throughput) × 100%
-> 100% = V7 Hybrid equivale ao Full Rebuild (migração completa)
+> 100% = V7 Hybrid equals Full Rebuild (complete migration)
 
-| Novas Linhas | Razão (new/base) | V4 (ms) | Hybrid (ms) | Full (ms) | Hybrid Speedup | Recovery Index |
+| New Rows | Ratio (new/base) | V4 (ms) | Hybrid (ms) | Full (ms) | Hybrid Speedup | Recovery Index |
 |---:|---:|---:|---:|---:|---:|---:|
 | 10.000 | 0,10× | 76,1 | 16,0 | 15,8 | 4,77× | **98,7%** |
 | 20.000 | 0,20× | 131,6 | 29,5 | 30,0 | 4,45× | **102,2%** ← **convergência** |
@@ -45,23 +45,23 @@
 | 340.000 | 3,40× | 4.419,0 | 745,5 | 720,9 | 5,93× | **96,1%** |
 | 350.000 | 3,50× | 4.818,6 | 766,6 | 712,8 | 6,29× | **91,8%** |
 
-## Resultado: Convergência em ~10.000 novas linhas
+## Result: Convergence at ~10,000 new rows
 
-Quando a base tem 100.000 linhas v4 legadas, o **V7 Hybrid** atinge ≥90% do
-desempenho do Full Rebuild ao inserir **~10.000 novas linhas** (razão **0,10× a base legada**).
+When the database has 100,000 legacy v4 rows, **V7 Hybrid** reaches ≥90% of
+the Full Rebuild performance after inserting **~10,000 new rows** (ratio **0.10× the legacy base**).
 
-### O que isso significa na prática
+### What this means in practice
 
-- Trocar para `Guid.CreateVersion7()` no código tem impacto **imediato** (74–91% mais rápido que v4)
-- A performance se torna **praticamente igual** ao Full Rebuild quando você inserir ~0,10× o tamanho da base legada em novos registros v7
-- Um `REORGANIZE` / `VACUUM` acelera essa convergência: o índice compactado elimina a fragmentação herdada
+- Switching to `Guid.CreateVersion7()` in code has an **immediate** impact (approx. 4×–6× faster than v4)
+- Performance becomes **practically equal** to Full Rebuild once you insert ~0.10× the legacy base size in new v7 records
+- A `REORGANIZE` / `VACUUM` speeds up convergence: the compacted index removes inherited fragmentation
 
-## Interpretação do Recovery Index
+## Recovery Index Interpretation
 
-| Faixa | Interpretação |
+| Range | Interpretation |
 |---|---|
-| 0–50% | V7 Hybrid claramente atrás do Full Rebuild — fragmentação herdada domina |
-| 50–80% | Ganho parcial — a maioria do benefício já está presente |
-| 80–95% | Próximo do ideal — fragmentação herdada tem impacto residual |
-| ≥95% | **Convergido** — performance equivalente ao Full Rebuild |
-> >100% pode ocorrer por variância de single-run (SQLite sem cache aquecido)
+| 0–50% | V7 Hybrid clearly behind Full Rebuild — inherited fragmentation dominates |
+| 50–80% | Partial gain — most of the benefit is already present |
+| 80–95% | Near ideal — inherited fragmentation has residual impact |
+| ≥95% | **Converged** — performance equivalent to Full Rebuild |
+> >100% can occur due to single-run variance (SQLite without warmed cache)

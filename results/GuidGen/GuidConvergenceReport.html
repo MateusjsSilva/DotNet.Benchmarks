@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>GUID v4 → v7: Ponto de Convergência</title>
+  <title>GUID v4 → v7: Convergence Point</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
@@ -23,39 +23,39 @@
 </head>
 <body>
   <div class="header">
-    <h1>GUID v4 → v7: Ponto de Convergência</h1>
-    <div class="subtitle">Base: 100.000 linhas v4 — Threshold: Recovery Index ≥ 90%</div>
-    <div class="note">Resultados resumidos do `GuidConvergenceReport.md` (convertido para visualização).</div>
+    <h1>GUID v4 → v7: Convergence Point</h1>
+    <div class="subtitle">Base: 100,000 v4 rows — Threshold: Recovery Index ≥ 90%</div>
+    <div class="note">Summary of `GuidConvergenceReport.md` (rendered for viewing).</div>
   </div>
 
   <div class="container">
     <div class="card">
-      <h2>Resumo</h2>
-      <p class="note">Quando a base tem 100.000 linhas v4 legadas, o <strong>V7 Hybrid</strong> atinge ≥90% do desempenho do Full Rebuild ao inserir ~10.000 novas linhas (0,10× a base legada).</p>
+      <h2>Summary</h2>
+      <p class="note">When the database has 100,000 legacy v4 rows, <strong>V7 Hybrid</strong> reaches ≥90% of Full Rebuild performance after inserting ~10,000 new rows (0.10× the legacy base).</p>
     </div>
 
     <div class="card">
-      <h2>Gráfico — Recovery Index (%)</h2>
+      <h2>Chart — Recovery Index (%)</h2>
       <canvas id="recoveryChart"></canvas>
     </div>
 
     <div class="card">
-      <h2>Gráfico — Hybrid Speedup (×)</h2>
+      <h2>Chart — Hybrid Speedup (×)</h2>
       <canvas id="speedupChart"></canvas>
     </div>
 
     <div class="card">
-      <h2>Gráfico — Tempo (ms) — Escala Log</h2>
+      <h2>Chart — Time (ms) — Log Scale</h2>
       <canvas id="timeChart"></canvas>
     </div>
 
     <div class="card">
-      <h2>Tabela de Dados</h2>
+      <h2>Data Table</h2>
       <table>
         <thead>
           <tr>
-            <th>Novas Linhas</th>
-            <th>Razão</th>
+            <th>New Rows</th>
+            <th>Ratio</th>
             <th>V4 (ms)</th>
             <th>Hybrid (ms)</th>
             <th>Full (ms)</th>

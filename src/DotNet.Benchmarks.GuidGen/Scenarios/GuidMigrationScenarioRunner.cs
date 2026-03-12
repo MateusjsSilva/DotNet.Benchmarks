@@ -38,18 +38,18 @@ internal static class GuidMigrationScenarioRunner
     {
         const int baseCount = 100_000;
 
-        output.WriteLine("# GUID v4 → v7: Benchmark de Migração (Parte 2)");
+        output.WriteLine("# GUID v4 → v7: Migration Benchmark (Part 2)");
         output.WriteLine();
-        output.WriteLine($"**Cenário:** banco legado com {baseCount:N0} linhas de GUID v4 (índice fragmentado).");
+        output.WriteLine($"**Scenario:** legacy database with {baseCount:N0} GUID v4 rows (fragmented index).");
         output.WriteLine();
-        output.WriteLine("**Estratégias testadas ao inserir novas linhas:**");
+        output.WriteLine("**Strategies tested when inserting new rows:");
         output.WriteLine();
-        output.WriteLine("| Estratégia | Descrição |");
+        output.WriteLine("| Strategy | Description |");
         output.WriteLine("|---|---|");
-        output.WriteLine("| V4 Baseline | Continua gerando v4 — fragmentação cresce indefinidamente |");
-        output.WriteLine("| V7 Hybrid | Troca para v7 imediatamente — fragmentação herdada persiste, novas inserções são sequenciais |");
-        output.WriteLine("| V7 + Vacuum | Compacta o índice antes de inserir v7 (análogo a `ALTER INDEX REBUILD` / `VACUUM FULL`) |");
-        output.WriteLine("| V7 Full Rebuild | Todos os IDs foram migrados para v7 — estado ideal pós-migração completa |");
+        output.WriteLine("| V4 Baseline | Continue generating v4 — fragmentation grows over time |");
+        output.WriteLine("| V7 Hybrid | Switch to v7 immediately — inherited fragmentation remains, new inserts are sequential |");
+        output.WriteLine("| V7 + Vacuum | Compact the index before inserting v7 (analogous to `ALTER INDEX REBUILD` / `VACUUM FULL`) |");
+        output.WriteLine("| V7 Full Rebuild | All IDs migrated to v7 — ideal post-migration state |");
         output.WriteLine();
 
         var addCounts = new[] { 10_000, 25_000, 50_000, 100_000, 250_000, 500_000 };
@@ -61,9 +61,9 @@ internal static class GuidMigrationScenarioRunner
             var v7Vacuum = RunMigrationScenario(MigrationStrategy.V7AfterVacuum, baseCount, addCount);
             var v7Full = RunMigrationScenario(MigrationStrategy.V7FullRebuild, baseCount, addCount);
 
-            output.WriteLine($"## {addCount:N0} novas linhas (base: {baseCount:N0} v4)");
+            output.WriteLine($"## {addCount:N0} new rows (base: {baseCount:N0} v4)");
             output.WriteLine();
-            output.WriteLine("| Estratégia | Tempo (ms) | Rows/s | Ganho vs V4 | Recovery Index | Gap vs Ideal |");
+            output.WriteLine("| Strategy | Time (ms) | Rows/s | Gain vs V4 | Recovery Index | Gap vs Ideal |");
             output.WriteLine("|---|---:|---:|---:|---:|---:|");
 
             PrintRow(output, v4, v4, v7Full);
@@ -74,22 +74,22 @@ internal static class GuidMigrationScenarioRunner
             output.WriteLine();
         }
 
-        output.WriteLine("## Guia de Interpretação");
+            output.WriteLine("## Interpretation Guide");
         output.WriteLine();
-        output.WriteLine("- **Ganho vs V4**: quanto mais rápido que continuar com v4 puro");
-        output.WriteLine("- **Recovery Index**: % do ganho máximo possível já recuperado — 100% = equivale ao Full Rebuild");
-        output.WriteLine("  - Fórmula: `(V7_Hybrid_throughput − V4_throughput) / (V7_Full_throughput − V4_throughput)`");
-        output.WriteLine("- **Gap vs Ideal**: quanto a abordagem ainda está atrás do Full Rebuild");
+            output.WriteLine("- **Gain vs V4**: how much faster compared to staying on v4");
+            output.WriteLine("- **Recovery Index**: % of the maximum possible gain already recovered — 100% = equals Full Rebuild");
+            output.WriteLine("  - Formula: `(V7_Hybrid_throughput − V4_throughput) / (V7_Full_throughput − V4_throughput)`");
+            output.WriteLine("- **Gap vs Ideal**: how far the approach is from Full Rebuild");
         output.WriteLine();
-        output.WriteLine("## Conclusões");
+            output.WriteLine("## Conclusions");
         output.WriteLine();
-        output.WriteLine("- **V7 Hybrid** oferece ganho imediato mesmo sobre uma base v4 fragmentada");
-        output.WriteLine("- O ganho cresce à medida que a proporção de novos registros v7 aumenta");
-        output.WriteLine("- **V7 + Vacuum** recupera a maior parte do ganho ideal com um único comando");
-        output.WriteLine("- Para quem não pode rebuildar todos os IDs, um `REORGANIZE`/`VACUUM` periódico");
-        output.WriteLine("  compacta as páginas antigas enquanto o v7 garante que as novas não fragmentem");
+            output.WriteLine("- **V7 Hybrid** provides immediate gains even on a fragmented v4 base");
+            output.WriteLine("- Gains increase as the share of new v7 records grows");
+            output.WriteLine("- **V7 + Vacuum** recovers most of the ideal gain with a single command");
+            output.WriteLine("- For teams that cannot rebuild all IDs, periodic `REORGANIZE`/`VACUUM`");
+            output.WriteLine("  compacts old pages while v7 ensures new inserts do not fragment");
         output.WriteLine();
-        output.WriteLine("> **Nota:** `VACUUM` no SQLite ≈ `ALTER INDEX REBUILD` (SQL Server) ≈ `VACUUM FULL + REINDEX` (Postgres)");
+            output.WriteLine("> **Note:** `VACUUM` in SQLite ≈ `ALTER INDEX REBUILD` (SQL Server) ≈ `VACUUM FULL + REINDEX` (Postgres)");
     }
 
     private static void PrintRow(TextWriter output, MigrationResult result, MigrationResult baseline, MigrationResult ideal)
@@ -108,7 +108,7 @@ internal static class GuidMigrationScenarioRunner
 
         var gapVsIdeal = result.Strategy == MigrationStrategy.V7FullRebuild
             ? "—"
-            : $"{(result.ElapsedMs - ideal.ElapsedMs) / ideal.ElapsedMs * 100:N1}% mais lento";
+            : $"{(result.ElapsedMs - ideal.ElapsedMs) / ideal.ElapsedMs * 100:N1}% slower";
 
         var name = result.Strategy switch
         {
@@ -151,14 +151,14 @@ internal static class GuidMigrationScenarioRunner
                 schema.ExecuteNonQuery();
             }
 
-            // Fase 1: popular a base legada
-            // V4Baseline, V7Hybrid, V7AfterVacuum → base v4 (fragmentada)
-            // V7FullRebuild → base v7 (todos os IDs migrados, índice limpo)
+            // Phase 1: populate the legacy base
+            // V4Baseline, V7Hybrid, V7AfterVacuum -> base v4 (fragmented)
+            // V7FullRebuild -> base v7 (all IDs migrated, clean index)
             var baseFlavor = strategy == MigrationStrategy.V7FullRebuild ? GuidFlavor.V7 : GuidFlavor.V4;
             InsertRows(connection, baseFlavor, baseCount);
 
-            // Fase 2: compactar o índice (apenas para V7AfterVacuum)
-            // VACUUM reconstrói o banco eliminando fragmentação — análogo ao ALTER INDEX REBUILD
+            // Phase 2: compact the index (only for V7AfterVacuum)
+            // VACUUM rebuilds the database to remove fragmentation — analogous to ALTER INDEX REBUILD
             if (strategy == MigrationStrategy.V7AfterVacuum)
             {
                 using var vacuum = connection.CreateCommand();
@@ -166,7 +166,7 @@ internal static class GuidMigrationScenarioRunner
                 vacuum.ExecuteNonQuery();
             }
 
-            // Fase 3: inserção cronometrada das novas linhas
+            // Phase 3: timed insertion of new rows
             var newFlavor = strategy == MigrationStrategy.V4Baseline ? GuidFlavor.V4 : GuidFlavor.V7;
 
             var sw = Stopwatch.StartNew();
@@ -207,10 +207,10 @@ internal static class GuidMigrationScenarioRunner
         payloadParam.Value = "benchmark-row";
         insert.Parameters.Add(payloadParam);
 
-        for (var i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
         {
             var guid = flavor == GuidFlavor.V7 ? Guid.CreateVersion7() : Guid.NewGuid();
-            // Big-endian: garante que a ordem de bytes == ordem temporal para o v7
+            // Big-endian: ensures byte order == temporal order for v7
             idParam.Value = guid.ToByteArray(bigEndian: true);
             insert.ExecuteNonQuery();
         }

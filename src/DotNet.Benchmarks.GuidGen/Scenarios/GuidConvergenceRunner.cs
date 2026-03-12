@@ -4,18 +4,13 @@ using Microsoft.Data.Sqlite;
 
 namespace DotNet.Benchmarks.GuidGen.Scenarios;
 
-/// <summary>
-/// Encontra o ponto de convergência onde o V7 Hybrid supera a inércia
-/// da fragmentação herdada de uma base v4 e atinge performance equivalente
-/// ao Full Rebuild (migração completa).
-/// </summary>
 internal static class GuidConvergenceRunner
 {
     private enum GuidFlavor { V4, V7 }
 
-    private const int BaseCount      = 100_000;  // base legada v4 (fragmentada)
-    private const int Repetitions    = 3;         // execuções por ponto para reduzir variância
-    private const double ConvergedAt = 90.0;      // threshold: Recovery Index >= 90%
+    private const int BaseCount      = 100_000;
+    private const int Repetitions    = 3;
+    private const double ConvergedAt = 90.0;
 
     public static int RunAndSave(TextWriter output, string reportPath)
     {
@@ -37,20 +32,19 @@ internal static class GuidConvergenceRunner
 
     private static void WriteReport(TextWriter output)
     {
-        output.WriteLine("# GUID v4 → v7: Ponto de Convergência");
+        output.WriteLine("# GUID v4 → v7: Convergence Point");
         output.WriteLine();
-        output.WriteLine($"**Base legada:** {BaseCount:N0} linhas GUID v4 (índice B-Tree fragmentado)");
-        output.WriteLine($"**Metodologia:** {Repetitions} execuções por ponto → mediana (reduz variância single-run)");
-        output.WriteLine($"**Threshold de convergência:** Recovery Index ≥ {ConvergedAt:N0}%");
+        output.WriteLine($"**Legacy base:** {BaseCount:N0} GUID v4 rows (fragmented B-Tree index)");
+        output.WriteLine($"**Methodology:** {Repetitions} runs per point → median (reduces single-run variance)");
+        output.WriteLine($"**Convergence threshold:** Recovery Index ≥ {ConvergedAt:N0}%");
         output.WriteLine();
         output.WriteLine("> Recovery Index = (Hybrid_throughput − V4_throughput) / (Full_throughput − V4_throughput) × 100%");
-        output.WriteLine("> 100% = V7 Hybrid equivale ao Full Rebuild (migração completa)");
+        output.WriteLine("> 100% = V7 Hybrid equals Full Rebuild (complete migration)");
         output.WriteLine();
 
-        // Janela focada: 10K–350K em passos de 10K (onde a transição ocorre)
         var addCounts = Enumerable.Range(1, 35).Select(i => i * 10_000).ToArray();
 
-        output.WriteLine("| Novas Linhas | Razão (new/base) | V4 (ms) | Hybrid (ms) | Full (ms) | Hybrid Speedup | Recovery Index |");
+        output.WriteLine("| New Rows | Ratio (new/base) | V4 (ms) | Hybrid (ms) | Full (ms) | Hybrid Speedup | Recovery Index |");
         output.WriteLine("|---:|---:|---:|---:|---:|---:|---:|");
 
         int? convergencePoint = null;
@@ -82,8 +76,8 @@ internal static class GuidConvergenceRunner
                 consecutiveAbove++;
                 if (consecutiveAbove >= 2 && convergencePoint is null)
                 {
-                    convergencePoint = addCount - 10_000; // primeiro ponto da sequência
-                    marker = " ← **convergência**";
+                            convergencePoint = addCount - 10_000; // first point of the sequence
+                            marker = " ← **convergence**";
                 }
                 recoveryStr = $"**{recovery:N1}%**";
             }
@@ -100,38 +94,38 @@ internal static class GuidConvergenceRunner
         if (convergencePoint.HasValue)
         {
             var ratio = (double)convergencePoint.Value / BaseCount;
-            output.WriteLine($"## Resultado: Convergência em ~{convergencePoint.Value:N0} novas linhas");
+            output.WriteLine($"## Result: Convergence at ~{convergencePoint.Value:N0} new rows");
             output.WriteLine();
-            output.WriteLine($"Quando a base tem {BaseCount:N0} linhas v4 legadas, o **V7 Hybrid** atinge ≥{ConvergedAt:N0}% do");
-            output.WriteLine($"desempenho do Full Rebuild ao inserir **~{convergencePoint.Value:N0} novas linhas** (razão **{ratio:N2}× a base legada**).");
+            output.WriteLine($"When the database has {BaseCount:N0} legacy v4 rows, **V7 Hybrid** reaches ≥{ConvergedAt:N0}% of");
+            output.WriteLine($"the Full Rebuild performance after inserting **~{convergencePoint.Value:N0} new rows** (ratio **{ratio:N2}× the legacy base**). ");
             output.WriteLine();
-            output.WriteLine("### O que isso significa na prática");
+            output.WriteLine("### What this means in practice");
             output.WriteLine();
-            output.WriteLine($"- Trocar para `Guid.CreateVersion7()` no código tem impacto **imediato** (74–91% mais rápido que v4)");
-            output.WriteLine($"- A performance se torna **praticamente igual** ao Full Rebuild quando você inserir ~{ratio:N2}× o tamanho da base legada em novos registros v7");
-            output.WriteLine($"- Um `REORGANIZE` / `VACUUM` acelera essa convergência: o índice compactado elimina a fragmentação herdada");
+            output.WriteLine($"- Switching to `Guid.CreateVersion7()` in code has an **immediate** impact (approx. 4×–6× faster than v4)");
+            output.WriteLine($"- Performance becomes **practically equal** to Full Rebuild once you insert ~{ratio:N2}× the legacy base size in new v7 records");
+            output.WriteLine($"- A `REORGANIZE` / `VACUUM` speeds up convergence by compacting the index and removing inherited fragmentation");
         }
         else
         {
-            output.WriteLine("## Resultado: convergência não detectada na janela testada (10K–350K)");
+            output.WriteLine("## Result: no convergence detected in the tested window (10K–350K)");
             output.WriteLine();
-            output.WriteLine("Considere aumentar o range ou reduzir o threshold de convergência.");
+            output.WriteLine("Consider increasing the range or lowering the convergence threshold.");
         }
 
         output.WriteLine();
-        output.WriteLine("## Interpretação do Recovery Index");
+        output.WriteLine("## Recovery Index Interpretation");
         output.WriteLine();
-        output.WriteLine("| Faixa | Interpretação |");
+        output.WriteLine("| Range | Interpretation |");
         output.WriteLine("|---|---|");
-        output.WriteLine("| 0–50% | V7 Hybrid claramente atrás do Full Rebuild — fragmentação herdada domina |");
-        output.WriteLine("| 50–80% | Ganho parcial — a maioria do benefício já está presente |");
-        output.WriteLine("| 80–95% | Próximo do ideal — fragmentação herdada tem impacto residual |");
-        output.WriteLine("| ≥95% | **Convergido** — performance equivalente ao Full Rebuild |");
-        output.WriteLine("> >100% pode ocorrer por variância de single-run (SQLite sem cache aquecido)");
+        output.WriteLine("| 0–50% | V7 Hybrid clearly behind Full Rebuild — inherited fragmentation dominates |");
+        output.WriteLine("| 50–80% | Partial gain — most of the benefit is already present |");
+        output.WriteLine("| 80–95% | Near ideal — inherited fragmentation has residual impact |");
+        output.WriteLine("| ≥95% | **Converged** — performance equivalent to Full Rebuild |");
+        output.WriteLine("> >100% can occur due to single-run variance (SQLite without warmed cache)");
     }
 
     /// <summary>
-    /// Executa <see cref="Repetitions"/> medições e retorna os tempos em ms.
+    /// Runs <see cref="Repetitions"/> measurements and returns the times in ms.
     /// </summary>
     private static double[] MeasureInsert(GuidFlavor newFlavor, int addCount, GuidFlavor baseFlavor)
     {
@@ -171,10 +165,10 @@ internal static class GuidConvergenceRunner
                 schema.ExecuteNonQuery();
             }
 
-            // Fase 1: popular a base (v4 = fragmentada / v7 = ideal)
+            
             InsertRows(connection, baseFlavor, BaseCount);
 
-            // Fase 2: medir inserção das novas linhas
+            
             var sw = Stopwatch.StartNew();
             InsertRows(connection, newFlavor, addCount);
             sw.Stop();
